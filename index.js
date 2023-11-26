@@ -13,7 +13,7 @@ const port = process.env.PORT || 5000
 
 // middleware
 const corsOptions = {
-    origin: ['http://localhost:5173', 'http://localhost:5174', 'http://127.0.0.1:5173','http://127.0.0.1:5173/'],
+    origin: ['http://localhost:5173', 'http://localhost:5174', 'http://127.0.0.1:5173', 'http://127.0.0.1:5173/'],
     credentials: true,
     optionSuccessStatus: 200,
 }
@@ -34,6 +34,7 @@ const client = new MongoClient(process.env.DB_URI, {
 async function run() {
     try {
         const usersCollection = client.db('TLIdb').collection('users');
+        const productsCollection = client.db('TLIdb').collection('products');
 
 
         // token verification api start 
@@ -52,12 +53,9 @@ async function run() {
                 next()
             })
         }
+        //token verification end 
 
-        //   token verification end 
-
-        // jwt api start 
-
-        // auth related api
+        //jwt api start 
         app.post('/jwt', async (req, res) => {
             const user = req.body
             console.log('new jwt:', user)
@@ -72,7 +70,7 @@ async function run() {
                 })
                 .send({ success: true })
         })
-        //   jwt api end 
+        //jwt api end 
 
         // Logout api start
         app.get('/logout', async (req, res) => {
@@ -91,24 +89,46 @@ async function run() {
         })
         // logout api end 
 
-          // Save or modify user email, status in DB
-    app.put('/users/:email', async (req, res) => {
-        const email = req.params.email
-        const user = req.body
-        const query = { email: email }
-        const options = { upsert: true }
-        const isExist = await usersCollection.findOne(query)
-        console.log('User found?----->', isExist)
-        if (isExist) return res.send(isExist)
-        const result = await usersCollection.updateOne(
-          query,
-          {
-            $set: { ...user, timestamp: Date.now() },
-          },
-          options
-        )
-        res.send(result)
-      })
+        // Save  user email start
+        app.put('/users/:email', async (req, res) => {
+            const email = req.params.email
+            const user = req.body
+            const query = { email: email }
+            const options = { upsert: true }
+            const isExist = await usersCollection.findOne(query)
+            console.log(isExist)
+            if (isExist) return res.send(isExist)
+            const result = await usersCollection.updateOne(
+                query,
+                {
+                    $set: { ...user, timestamp: Date.now() },
+                },
+                options
+            )
+            res.send(result)
+        })
+        // Save  user email end
+
+        // post Product api start 
+        app.post('/products',verifyToken,async(req,res)=>{
+            const product = req.body;
+            const result = await productsCollection.insertOne(product);
+            res.send(result);
+        })
+        // post Product api end 
+
+        app.get('/products',async(req,res)=>{
+            const result = await productsCollection.find().toArray();
+            res.send(result);
+        })
+        app.get('/product/:id',async(req,res)=>{
+            const id = req.params.id
+            const result = await productsCollection.findOne({_id: new ObjectId(id)});
+            res.send(result);
+        })
+       
+
+
 
         await client.db("admin").command({ ping: 1 });
         console.log("Pinged your deployment. You successfully connected to MongoDB!");
@@ -119,8 +139,8 @@ run().catch(console.dir);
 
 app.get('/', (req, res) => {
     res.send('Tech server is Running')
-  })
-  
-  app.listen(port, () => {
+})
+
+app.listen(port, () => {
     console.log(`server running on port: ${port}`);
-  })
+})
