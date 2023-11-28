@@ -35,6 +35,7 @@ async function run() {
     try {
         const usersCollection = client.db('TLIdb').collection('users');
         const productsCollection = client.db('TLIdb').collection('products');
+        const tagsCollection = client.db('TLIdb').collection('tags');
 
 
         // token verification api start 
@@ -126,7 +127,20 @@ async function run() {
             const result = await productsCollection.findOne({_id: new ObjectId(id)});
             res.send(result);
         })
-       
+
+        // Add a new endpoint to fetch products by tag
+
+        // app.get('/products/tag/:tag', async (req, res) => {
+        //     const tag = req.params.tag;
+          
+        //     try {
+        //       const result = await productsCollection.find({ tags: tag }).toArray();
+        //       res.json(result);
+        //     } catch (error) {
+        //       console.error('Error fetching products by tag:', error);
+        //       res.status(500).send('Internal Server Error');
+        //     }
+        //   });
 
 
 
