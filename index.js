@@ -7,9 +7,8 @@ const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb')
 const jwt = require('jsonwebtoken')
 const morgan = require('morgan')
 const port = process.env.PORT || 5000
-// const stripe = require('stripe')(process.env.PAYMENT_SECRET_KEY)
+const stripe = require('stripe')(process.env.PAYMENT_SECRET_KEY)
 // const nodemailer = require('nodemailer')
-
 
 // middleware
 const corsOptions = {
@@ -21,7 +20,6 @@ app.use(cors(corsOptions))
 app.use(express.json())
 app.use(cookieParser())
 app.use(morgan('dev'))
-
 
 const client = new MongoClient(process.env.DB_URI, {
     serverApi: {
@@ -36,7 +34,7 @@ async function run() {
         const usersCollection = client.db('TLIdb').collection('users');
         const productsCollection = client.db('TLIdb').collection('products');
         const tagsCollection = client.db('TLIdb').collection('tags');
-
+        const subscriptionsCollection = client.db('TLIdb').collection('subscriptions');
 
         // token verification api start 
         const verifyToken = async (req, res, next) => {
@@ -92,6 +90,7 @@ async function run() {
 
         // Save  user email start
         app.put('/users/:email', async (req, res) => {
+            const name = req.params.name
             const email = req.params.email
             const user = req.body
             const query = { email: email }
@@ -102,7 +101,7 @@ async function run() {
             const result = await usersCollection.updateOne(
                 query,
                 {
-                    $set: { ...user, timestamp: Date.now() },
+                    $set: { name,...user, timestamp: Date.now() },
                 },
                 options
             )
@@ -110,39 +109,117 @@ async function run() {
         })
         // Save  user email end
 
+        // get single user api with email start
+        app.get('/user/email/:email', async (req, res) => {
+            const email = req.params.email;
+            const result = await usersCollection.findOne({ email });
+            res.send(result);
+        });
+        // get single user api with email end
+
+        // get single user by id api with id start
+        app.get('/user/id/:id', async (req, res) => {
+            const id = req.params.userId;
+            const user = await usersCollection.findOne({ _id: new ObjectId(id) });
+            res.send(user);
+        });
+        // get single user by id api with id end
+
+        // get users api start
+        app.get('/users', async (req, res) => {
+            const result = await usersCollection.find().toArray();
+            res.send(result);
+        })
+        // get users api end
+
+        // update user role api start 
+        app.put('/users/update/:email', async (req, res) => {
+            const email = req.params.email
+            const user = req.body
+            const query = { email: email }
+            const options = { upsert: true }
+            const updateDoc = {
+              $set: {
+                ...user,
+                timestamp: Date.now(),
+              },
+            }
+            const result = await usersCollection.updateOne(query, updateDoc, options)
+            res.send(result)
+          })
+        // update user role api end 
+
         // post Product api start 
-        app.post('/products',verifyToken,async(req,res)=>{
+        app.post('/products', async (req, res) => {
             const product = req.body;
             const result = await productsCollection.insertOne(product);
             res.send(result);
         })
         // post Product api end 
 
-        app.get('/products',async(req,res)=>{
+        // get single product by id start
+        app.get('/product/:id', async (req, res) => {
+            const id = req.params.id
+            const result = await productsCollection.findOne({ _id: new ObjectId(id) });
+            res.send(result);
+        })
+        // get single product by id start
+
+        // get Product api start
+        app.get('/products', async (req, res) => {
             const result = await productsCollection.find().toArray();
             res.send(result);
         })
-        app.get('/product/:id',async(req,res)=>{
+        // get Product api end
+
+        // strip payment api start 
+        // Server route
+        app.post('/create-checkout-session', async (req, res) => {
+            try {
+                const { payAmount } = req.body;
+                const amount = parseInt(payAmount * 100);
+
+                if (!payAmount || amount < 1) {
+                    return res.status(400).json({ error: 'Invalid payment amount' });
+                }
+
+                const { client_secret } = await stripe.paymentIntents.create({
+                    amount: amount,
+                    currency: 'usd',
+                    payment_method: 'card',
+                });
+
+                res.status(200).json({ clientSecret: client_secret });
+            } catch (error) {
+                console.error('Error creating checkout session:', error);
+                res.status(500).json({ error: 'Internal server error' });
+            }
+        });
+        // strip payment api end 
+
+        // Save subscription info api start 
+        app.post('/subscriptions', verifyToken, async (req, res) => {
+            const subscription = req.body
+            const result = await subscriptionsCollection.insertOne(subscription);
+            res.send(result)
+        })
+        // Save subscription info api end
+
+        // Update user subscription status api start
+        app.patch('/user/subscribe/:id', async (req, res) => {
             const id = req.params.id
-            const result = await productsCollection.findOne({_id: new ObjectId(id)});
-            res.send(result);
+            const status = req.body.status
+            const query = { _id: new ObjectId(id) }
+            const updateDoc = {
+                $set: {
+                    subscribe: status,
+                },
+            }
+            const result = await usersCollection.updateOne(query, updateDoc)
+            res.send(result)
         })
 
-        // Add a new endpoint to fetch products by tag
-
-        // app.get('/products/tag/:tag', async (req, res) => {
-        //     const tag = req.params.tag;
-          
-        //     try {
-        //       const result = await productsCollection.find({ tags: tag }).toArray();
-        //       res.json(result);
-        //     } catch (error) {
-        //       console.error('Error fetching products by tag:', error);
-        //       res.status(500).send('Internal Server Error');
-        //     }
-        //   });
-
-
+        // Update user subscription status api end
 
         await client.db("admin").command({ ping: 1 });
         console.log("Pinged your deployment. You successfully connected to MongoDB!");
