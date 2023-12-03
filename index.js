@@ -35,6 +35,7 @@ async function run() {
         const productsCollection = client.db('TLIdb').collection('products');
         const tagsCollection = client.db('TLIdb').collection('tags');
         const subscriptionsCollection = client.db('TLIdb').collection('subscriptions');
+        const voteCollection = client.db('TLIdb').collection('votes');
 
         // token verification api start 
         const verifyToken = async (req, res, next) => {
@@ -181,6 +182,8 @@ async function run() {
         })
         // post Product api end
 
+
+        // update product api start
         app.put('/product/:id', async (req, res) => {
             try {
                 const id = req.params.id;
@@ -204,6 +207,7 @@ async function run() {
                 res.status(500).send(err); // Send an error response
             }
         })
+        // update product api end
 
         // get Product api start
         app.get('/products', async (req, res) => {
@@ -228,6 +232,7 @@ async function run() {
         })
         // get single product by id end
 
+        // delete product api start 
         app.delete('/product/:id', async (req, res) => {
             try {
                 const id = req.params.id;
@@ -238,6 +243,7 @@ async function run() {
                 console.log("'error on app.delete('/product/:id'", error)
             }
         })
+        // delete product api end
 
         // get  product by email start
         app.get('/products/:email', async (req, res) => {
@@ -253,10 +259,6 @@ async function run() {
         })
         // get  product by email end
 
-
-
-
-
         // update product featured api start 
         app.put('/product/update/:id', async (req, res) => {
             try {
@@ -271,9 +273,8 @@ async function run() {
                 const options = { upsert: true };
                 const updateDoc = {
                     $set: {
-                        featured: product.featured, // Update the 'featured' field
-                        timestamp: Date.now(), // Optionally update other fields as needed
-                        // ... add other fields to update as needed
+                        featured: product.featured,
+                        timestamp: Date.now(),
                     },
                 };
 
@@ -323,6 +324,47 @@ async function run() {
                 res.status(500).json({ error: 'Internal Server Error' });
             }
         });
+
+
+        // Example Express route
+      // Example Express route
+app.post('/vote/:productId/:userEmail/:type', async (req, res) => {
+    try {
+        const productId = req.params.productId;
+        const userEmail = req.params.userEmail;
+        const type = req.params.type; // 'like' or 'dislike'
+
+        // Check if the user has already voted for this product
+        const existingVote = await voteCollection.findOne({
+            productId: productId,
+            userEmail: userEmail,
+        });
+
+        if (existingVote) {
+            // User has already voted, handle accordingly (e.g., send an error response)
+            return res.status(400).json({ error: 'User has already voted for this product.' });
+        }
+
+        // User has not voted, proceed to update the vote count
+        const updateType = { $inc: { vote: 1 } }; // Increment the vote field by 1
+
+        // Update the product's vote count
+        await productsCollection.updateOne({ _id: new ObjectId(productId) }, updateType);
+
+        // Record the user's vote in the voteCollection
+        await voteCollection.insertOne({
+            productId: productId,
+            userEmail: userEmail,
+            type: type,
+        });
+
+        res.status(200).json({ message: 'Vote recorded successfully.' });
+    } catch (error) {
+        console.error('Error handling vote:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
 
         // strip payment api start 
         // Server route
