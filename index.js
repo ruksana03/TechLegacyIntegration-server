@@ -90,24 +90,24 @@ async function run() {
 
         // Save  user email start
         app.put('/users/:email', async (req, res) => {
-            try{
+            try {
                 const name = req.params.name
-            const email = req.params.email
-            const user = req.body
-            const query = { email: email }
-            const options = { upsert: true }
-            const isExist = await usersCollection.findOne(query)
-            console.log(isExist)
-            if (isExist) return res.send(isExist)
-            const result = await usersCollection.updateOne(
-                query,
-                {
-                    $set: { name, ...user, timestamp: Date.now() },
-                },
-                options
-            )
-            res.send(result)
-            }catch(error){
+                const email = req.params.email
+                const user = req.body
+                const query = { email: email }
+                const options = { upsert: true }
+                const isExist = await usersCollection.findOne(query)
+                console.log(isExist)
+                if (isExist) return res.send(isExist)
+                const result = await usersCollection.updateOne(
+                    query,
+                    {
+                        $set: { name, ...user, timestamp: Date.now() },
+                    },
+                    options
+                )
+                res.send(result)
+            } catch (error) {
                 console.log("ann error occer on app.put user/:email route")
             }
         })
@@ -115,72 +115,72 @@ async function run() {
 
         // get single user api with email start
         app.get('/user/email/:email', async (req, res) => {
-           try{
-            const email = req.params.email;
-            const result = await usersCollection.findOne({ email });
-            res.send(result);
-           }catch(error){
-            console.log("error on app.get('/user/email/:email'")
-           }
+            try {
+                const email = req.params.email;
+                const result = await usersCollection.findOne({ email });
+                res.send(result);
+            } catch (error) {
+                console.log("error on app.get('/user/email/:email'")
+            }
         });
         // get single user api with email end
 
         // get single user by id api with id start
         app.get('/user/id/:id', async (req, res) => {
-           try{
-            const id = req.params.userId;
-            const user = await usersCollection.findOne({ _id: new ObjectId(id) });
-            res.send(user);
-           }catch(error){
-            console.log("error on  app.get('/user/id/:id'")
-           }
+            try {
+                const id = req.params.userId;
+                const user = await usersCollection.findOne({ _id: new ObjectId(id) });
+                res.send(user);
+            } catch (error) {
+                console.log("error on  app.get('/user/id/:id'")
+            }
         });
         // get single user by id api with id end
 
         // get users api start
         app.get('/users', async (req, res) => {
-          try{
-            const result = await usersCollection.find().toArray();
-            res.send(result);
-          }catch(error){
-            console.log("error on  app.get('/users'")
-          }
+            try {
+                const result = await usersCollection.find().toArray();
+                res.send(result);
+            } catch (error) {
+                console.log("error on  app.get('/users'")
+            }
         })
         // get users api end
 
         // update user role api start 
         app.put('/users/update/:email', async (req, res) => {
-            try{
+            try {
                 const email = req.params.email
-            const user = req.body
-            const query = { email: email }
-            const options = { upsert: true }
-            const updateDoc = {
-                $set: {
-                    ...user,
-                    timestamp: Date.now(),
-                },
-            }
-            const result = await usersCollection.updateOne(query, updateDoc, options)
-            res.send(result)
-            }catch(error){
-                console.log("error on app.put('/users/update/:email'",error)
+                const user = req.body
+                const query = { email: email }
+                const options = { upsert: true }
+                const updateDoc = {
+                    $set: {
+                        ...user,
+                        timestamp: Date.now(),
+                    },
+                }
+                const result = await usersCollection.updateOne(query, updateDoc, options)
+                res.send(result)
+            } catch (error) {
+                console.log("error on app.put('/users/update/:email'", error)
             }
         })
         // update user role api end 
 
         // post Product api start 
         app.post('/products', async (req, res) => {
-        try{
-            const product = req.body;
-            const result = await productsCollection.insertOne(product);
-            res.send(result);
-        }catch(error){
-            console.log("error on app.post('/products',",error)
-        }
+            try {
+                const product = req.body;
+                const result = await productsCollection.insertOne(product);
+                res.send(result);
+            } catch (error) {
+                console.log("error on app.post('/products',", error)
+            }
         })
         // post Product api end
-        
+
         app.put('/product/:id', async (req, res) => {
             try {
                 const id = req.params.id;
@@ -193,11 +193,11 @@ async function run() {
                         tags: updatedProduct.tags,
                         description: updatedProduct.description,
                         image: updatedProduct.image,
-                        externalLinks:updatedProduct.externalLinks
+                        externalLinks: updatedProduct.externalLinks
                     }
                 }
-        
-                const result = await productsCollection.updateOne(filter, updatedDoc,options)
+
+                const result = await productsCollection.updateOne(filter, updatedDoc, options)
                 res.send(result);
             } catch (err) {
                 console.log("app.patch('/product/:id'", err)
@@ -205,57 +205,57 @@ async function run() {
             }
         })
 
-          // get Product api start
-          app.get('/products', async (req, res) => {
-          try{
-            const result = await productsCollection.find().toArray();
-            res.send(result);
-          }catch(error){
-            console.log("error on app.get('/products'",error)
-          }
+        // get Product api start
+        app.get('/products', async (req, res) => {
+            try {
+                const result = await productsCollection.find().toArray();
+                res.send(result);
+            } catch (error) {
+                console.log("error on app.get('/products'", error)
+            }
         })
         // get Product api end
 
-         // get single product by id start
-         app.get('/product/:id', async (req, res) => {
-            try{
+        // get single product by id start
+        app.get('/product/:id', async (req, res) => {
+            try {
                 const id = req.params.id
-            const result = await productsCollection.findOne({ _id: new ObjectId(id) });
-            res.send(result);
-            }catch(error){
-                console.log("error on app.get('/product/:id'",error)
+                const result = await productsCollection.findOne({ _id: new ObjectId(id) });
+                res.send(result);
+            } catch (error) {
+                console.log("error on app.get('/product/:id'", error)
             }
         })
         // get single product by id end
-       
+
         app.delete('/product/:id', async (req, res) => {
-         try{
-            const id = req.params.id;
-            const query = { _id: new ObjectId(id) }
-            const result = await productsCollection.deleteOne(query);
-            res.send(result);
-         }catch(error){
-            console.log("'error on app.delete('/product/:id'", error)
-         }
-          })
+            try {
+                const id = req.params.id;
+                const query = { _id: new ObjectId(id) }
+                const result = await productsCollection.deleteOne(query);
+                res.send(result);
+            } catch (error) {
+                console.log("'error on app.delete('/product/:id'", error)
+            }
+        })
 
         // get  product by email start
         app.get('/products/:email', async (req, res) => {
-        try{
-            const email = req.params.email
-            const result = await productsCollection
-                .find({ 'owner.email': email })
-                .toArray()
-            res.send(result)
-        }catch(error){
-            console.log("error on app.get('/products/:email'",error)
-        }
+            try {
+                const email = req.params.email
+                const result = await productsCollection
+                    .find({ 'owner.email': email })
+                    .toArray()
+                res.send(result)
+            } catch (error) {
+                console.log("error on app.get('/products/:email'", error)
+            }
         })
         // get  product by email end
 
 
 
-      
+
 
         // update product featured api start 
         app.put('/product/update/:id', async (req, res) => {
@@ -370,8 +370,18 @@ async function run() {
             const result = await usersCollection.updateOne(query, updateDoc)
             res.send(result)
         })
-
         // Update user subscription status api end
+
+        // get Product api start
+        app.get('/tags', async (req, res) => {
+            try {
+                const result = await tagsCollection.find().toArray();
+                res.send(result);
+            } catch (error) {
+                console.log("error on app.get('/tags'", error)
+            }
+        })
+        // get Product api end
 
         await client.db("admin").command({ ping: 1 });
         console.log("Pinged your deployment. You successfully connected to MongoDB!");
