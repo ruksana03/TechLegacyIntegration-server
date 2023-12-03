@@ -90,7 +90,8 @@ async function run() {
 
         // Save  user email start
         app.put('/users/:email', async (req, res) => {
-            const name = req.params.name
+            try{
+                const name = req.params.name
             const email = req.params.email
             const user = req.body
             const query = { email: email }
@@ -101,76 +102,227 @@ async function run() {
             const result = await usersCollection.updateOne(
                 query,
                 {
-                    $set: { name,...user, timestamp: Date.now() },
+                    $set: { name, ...user, timestamp: Date.now() },
                 },
                 options
             )
             res.send(result)
+            }catch(error){
+                console.log("ann error occer on app.put user/:email route")
+            }
         })
         // Save  user email end
 
         // get single user api with email start
         app.get('/user/email/:email', async (req, res) => {
+           try{
             const email = req.params.email;
             const result = await usersCollection.findOne({ email });
             res.send(result);
+           }catch(error){
+            console.log("error on app.get('/user/email/:email'")
+           }
         });
         // get single user api with email end
 
         // get single user by id api with id start
         app.get('/user/id/:id', async (req, res) => {
+           try{
             const id = req.params.userId;
             const user = await usersCollection.findOne({ _id: new ObjectId(id) });
             res.send(user);
+           }catch(error){
+            console.log("error on  app.get('/user/id/:id'")
+           }
         });
         // get single user by id api with id end
 
         // get users api start
         app.get('/users', async (req, res) => {
+          try{
             const result = await usersCollection.find().toArray();
             res.send(result);
+          }catch(error){
+            console.log("error on  app.get('/users'")
+          }
         })
         // get users api end
 
         // update user role api start 
         app.put('/users/update/:email', async (req, res) => {
-            const email = req.params.email
+            try{
+                const email = req.params.email
             const user = req.body
             const query = { email: email }
             const options = { upsert: true }
             const updateDoc = {
-              $set: {
-                ...user,
-                timestamp: Date.now(),
-              },
+                $set: {
+                    ...user,
+                    timestamp: Date.now(),
+                },
             }
             const result = await usersCollection.updateOne(query, updateDoc, options)
             res.send(result)
-          })
+            }catch(error){
+                console.log("error on app.put('/users/update/:email'",error)
+            }
+        })
         // update user role api end 
 
         // post Product api start 
         app.post('/products', async (req, res) => {
+        try{
             const product = req.body;
             const result = await productsCollection.insertOne(product);
             res.send(result);
+        }catch(error){
+            console.log("error on app.post('/products',",error)
+        }
         })
-        // post Product api end 
-
-        // get single product by id start
-        app.get('/product/:id', async (req, res) => {
-            const id = req.params.id
-            const result = await productsCollection.findOne({ _id: new ObjectId(id) });
-            res.send(result);
+        // post Product api end
+        
+        app.put('/product/:id', async (req, res) => {
+            try {
+                const id = req.params.id;
+                const updatedProduct = req.body;
+                const filter = { _id: new ObjectId(id) }
+                const options = { upsert: true };
+                const updatedDoc = {
+                    $set: {
+                        productName: updatedProduct.productName,
+                        tags: updatedProduct.tags,
+                        description: updatedProduct.description,
+                        image: updatedProduct.image,
+                        externalLinks:updatedProduct.externalLinks
+                    }
+                }
+        
+                const result = await productsCollection.updateOne(filter, updatedDoc,options)
+                res.send(result);
+            } catch (err) {
+                console.log("app.patch('/product/:id'", err)
+                res.status(500).send(err); // Send an error response
+            }
         })
-        // get single product by id start
 
-        // get Product api start
-        app.get('/products', async (req, res) => {
+          // get Product api start
+          app.get('/products', async (req, res) => {
+          try{
             const result = await productsCollection.find().toArray();
             res.send(result);
+          }catch(error){
+            console.log("error on app.get('/products'",error)
+          }
         })
         // get Product api end
+
+         // get single product by id start
+         app.get('/product/:id', async (req, res) => {
+            try{
+                const id = req.params.id
+            const result = await productsCollection.findOne({ _id: new ObjectId(id) });
+            res.send(result);
+            }catch(error){
+                console.log("error on app.get('/product/:id'",error)
+            }
+        })
+        // get single product by id end
+       
+        app.delete('/product/:id', async (req, res) => {
+         try{
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) }
+            const result = await productsCollection.deleteOne(query);
+            res.send(result);
+         }catch(error){
+            console.log("'error on app.delete('/product/:id'", error)
+         }
+          })
+
+        // get  product by email start
+        app.get('/products/:email', async (req, res) => {
+        try{
+            const email = req.params.email
+            const result = await productsCollection
+                .find({ 'owner.email': email })
+                .toArray()
+            res.send(result)
+        }catch(error){
+            console.log("error on app.get('/products/:email'",error)
+        }
+        })
+        // get  product by email end
+
+
+
+      
+
+        // update product featured api start 
+        app.put('/product/update/:id', async (req, res) => {
+            try {
+                const id = req.params.id;
+                const product = req.body;
+
+                if (!ObjectId.isValid(id)) {
+                    return res.status(400).json({ error: 'Invalid product ID' });
+                }
+
+                const query = { _id: new ObjectId(id) };
+                const options = { upsert: true };
+                const updateDoc = {
+                    $set: {
+                        featured: product.featured, // Update the 'featured' field
+                        timestamp: Date.now(), // Optionally update other fields as needed
+                        // ... add other fields to update as needed
+                    },
+                };
+
+                const result = await productsCollection.updateOne(query, updateDoc, options);
+                res.send(result);
+            } catch (error) {
+                console.error('Error updating product:', error);
+                res.status(500).json({ error: 'Internal Server Error' });
+            }
+        });
+        // update  product featured api end 
+
+        // Update product status to Accepted
+        app.put('/product/accept/:id', async (req, res) => {
+            try {
+                const id = req.params.id;
+                const query = { _id: new ObjectId(id) };
+                const updateDoc = {
+                    $set: {
+                        status: 'Accepted',
+                    },
+                };
+
+                const result = await productsCollection.updateOne(query, updateDoc);
+                res.send(result);
+            } catch (error) {
+                console.error('Error updating product status:', error);
+                res.status(500).json({ error: 'Internal Server Error' });
+            }
+        });
+
+        // Update product status to Rejected
+        app.put('/product/reject/:id', async (req, res) => {
+            try {
+                const id = req.params.id;
+                const query = { _id: new ObjectId(id) };
+                const updateDoc = {
+                    $set: {
+                        status: 'Rejected',
+                    },
+                };
+
+                const result = await productsCollection.updateOne(query, updateDoc);
+                res.send(result);
+            } catch (error) {
+                console.error('Error updating product status:', error);
+                res.status(500).json({ error: 'Internal Server Error' });
+            }
+        });
 
         // strip payment api start 
         // Server route
