@@ -211,7 +211,7 @@ async function run() {
         })
         // update product api end
 
-        // get Product api start
+        // get Products api start
         app.get('/products', async (req, res) => {
             try {
                 const result = await productsCollection.find().toArray();
@@ -220,7 +220,7 @@ async function run() {
                 console.log("error on app.get('/products'", error)
             }
         })
-        // get Product api end
+        // get Products api end
 
         // get single product by id start
         app.get('/product/:id', async (req, res) => {
@@ -328,32 +328,21 @@ async function run() {
         });
 
 
-        // Example Express route
-        // Example Express route
+        // post voting count start 
         app.post('/vote/:productId/:userEmail/:type', async (req, res) => {
             try {
                 const productId = req.params.productId;
                 const userEmail = req.params.userEmail;
-                const type = req.params.type; // 'like' or 'dislike'
-
-                // Check if the user has already voted for this product
+                const type = req.params.type;
                 const existingVote = await voteCollection.findOne({
                     productId: productId,
                     userEmail: userEmail,
                 });
-
                 if (existingVote) {
-                    // User has already voted, handle accordingly (e.g., send an error response)
                     return res.status(400).json({ error: 'User has already voted for this product.' });
                 }
-
-                // User has not voted, proceed to update the vote count
-                const updateType = { $inc: { vote: 1 } }; // Increment the vote field by 1
-
-                // Update the product's vote count
+                const updateType = { $inc: { vote: 1 } };
                 await productsCollection.updateOne({ _id: new ObjectId(productId) }, updateType);
-
-                // Record the user's vote in the voteCollection
                 await voteCollection.insertOne({
                     productId: productId,
                     userEmail: userEmail,
@@ -366,9 +355,10 @@ async function run() {
                 res.status(500).json({ error: 'Internal Server Error' });
             }
         });
+        // post voting count start 
 
-         // post review api start 
-         app.post('/reviews', async (req, res) => {
+        // post review api start 
+        app.post('/reviews', async (req, res) => {
             try {
                 const review = req.body;
                 const result = await reviewsCollection.insertOne(review);
@@ -379,8 +369,8 @@ async function run() {
         })
         // post review api end
 
-         // get review api start 
-         app.get('/reviews', async (req, res) => {
+        // get review api start 
+        app.get('/reviews', async (req, res) => {
             try {
                 const result = await reviewsCollection.find().toArray();
                 res.send(result);
@@ -391,33 +381,66 @@ async function run() {
         // get review api end
 
 
-       // post reports api start 
-       app.post('/reports', async (req, res) => {
-        try {
-            const review = req.body;
-            const result = await reportsCollection.insertOne(review);
-            res.send(result);
-        } catch (error) {
-            console.log("error on app.post('/reports',", error)
-        }
-    })
-    // post reports api end
+        // post reports api start 
+        app.post('/reports', async (req, res) => {
+            try {
+                const review = req.body;
+                const result = await reportsCollection.insertOne(review);
+                res.send(result);
+            } catch (error) {
+                console.log("error on app.post('/reports',", error)
+            }
+        })
+        // post reports api end
 
-       // get reports api start 
-       app.get('/reports', async (req, res) => {
-        try {
-            const result = await reportsCollection.find().toArray();
-            res.send(result);
-            res.send(result);
-        } catch (error) {
-            console.log("error on app.post('/reports',", error)
-        }
-    })
-    // get reports api end
+        // get reports api start 
+        app.get('/reports', async (req, res) => {
+            try {
+                const result = await reportsCollection.find().toArray();
+                res.send(result);
+                res.send(result);
+            } catch (error) {
+                console.log("error on app.post('/reports',", error)
+            }
+        })
+        // get reports api end
+
+        // get single reports api start 
+        app.get('/report/:id', async (req, res) => {
+            try {
+                const id = req.params.id
+                const result = await reportsCollection.findOne({ _id: new ObjectId(id) });
+                res.send(result);
+            } catch (error) {
+                console.log("error on app.get('/product/:id'", error)
+            }
+        })
+        // get single reports api end
+
+        // delete single product by id start
+        app.delete('/report/:id', async (req, res) => {
+            try {
+                const id = req.params.id;
+                const query = { _id: new ObjectId(id) }
+                const result = await reportsCollection.deleteOne(query);
+                res.send(result);
+            } catch (error) {
+                console.log("'error on app.delete('/product/:id'", error)
+            }
+        })
+        // delete single product by id end
+
+        // get Product api start
+        app.get('/tags', async (req, res) => {
+            try {
+                const result = await tagsCollection.find().toArray();
+                res.send(result);
+            } catch (error) {
+                console.log("error on app.get('/tags'", error)
+            }
+        })
+        // get Product api end
         
-        
-
-
         // strip payment api start 
         // Server route
         app.post('/create-checkout-session', async (req, res) => {
@@ -466,16 +489,7 @@ async function run() {
         })
         // Update user subscription status api end
 
-        // get Product api start
-        app.get('/tags', async (req, res) => {
-            try {
-                const result = await tagsCollection.find().toArray();
-                res.send(result);
-            } catch (error) {
-                console.log("error on app.get('/tags'", error)
-            }
-        })
-        // get Product api end
+
 
         await client.db("admin").command({ ping: 1 });
         console.log("Pinged your deployment. You successfully connected to MongoDB!");
