@@ -36,6 +36,8 @@ async function run() {
         const tagsCollection = client.db('TLIdb').collection('tags');
         const subscriptionsCollection = client.db('TLIdb').collection('subscriptions');
         const voteCollection = client.db('TLIdb').collection('votes');
+        const reviewsCollection = client.db('TLIdb').collection('reviews');
+        const reportsCollection = client.db('TLIdb').collection('reports');
 
         // token verification api start 
         const verifyToken = async (req, res, next) => {
@@ -327,43 +329,93 @@ async function run() {
 
 
         // Example Express route
-      // Example Express route
-app.post('/vote/:productId/:userEmail/:type', async (req, res) => {
-    try {
-        const productId = req.params.productId;
-        const userEmail = req.params.userEmail;
-        const type = req.params.type; // 'like' or 'dislike'
+        // Example Express route
+        app.post('/vote/:productId/:userEmail/:type', async (req, res) => {
+            try {
+                const productId = req.params.productId;
+                const userEmail = req.params.userEmail;
+                const type = req.params.type; // 'like' or 'dislike'
 
-        // Check if the user has already voted for this product
-        const existingVote = await voteCollection.findOne({
-            productId: productId,
-            userEmail: userEmail,
+                // Check if the user has already voted for this product
+                const existingVote = await voteCollection.findOne({
+                    productId: productId,
+                    userEmail: userEmail,
+                });
+
+                if (existingVote) {
+                    // User has already voted, handle accordingly (e.g., send an error response)
+                    return res.status(400).json({ error: 'User has already voted for this product.' });
+                }
+
+                // User has not voted, proceed to update the vote count
+                const updateType = { $inc: { vote: 1 } }; // Increment the vote field by 1
+
+                // Update the product's vote count
+                await productsCollection.updateOne({ _id: new ObjectId(productId) }, updateType);
+
+                // Record the user's vote in the voteCollection
+                await voteCollection.insertOne({
+                    productId: productId,
+                    userEmail: userEmail,
+                    type: type,
+                });
+
+                res.status(200).json({ message: 'Vote recorded successfully.' });
+            } catch (error) {
+                console.error('Error handling vote:', error);
+                res.status(500).json({ error: 'Internal Server Error' });
+            }
         });
 
-        if (existingVote) {
-            // User has already voted, handle accordingly (e.g., send an error response)
-            return res.status(400).json({ error: 'User has already voted for this product.' });
+         // post review api start 
+         app.post('/reviews', async (req, res) => {
+            try {
+                const review = req.body;
+                const result = await reviewsCollection.insertOne(review);
+                res.send(result);
+            } catch (error) {
+                console.log("error on app.post('/reviews',", error)
+            }
+        })
+        // post review api end
+
+         // get review api start 
+         app.get('/reviews', async (req, res) => {
+            try {
+                const result = await reviewsCollection.find().toArray();
+                res.send(result);
+            } catch (error) {
+                console.log("error on app.get('/reviews'", error)
+            }
+        })
+        // get review api end
+
+
+       // post reports api start 
+       app.post('/reports', async (req, res) => {
+        try {
+            const review = req.body;
+            const result = await reportsCollection.insertOne(review);
+            res.send(result);
+        } catch (error) {
+            console.log("error on app.post('/reports',", error)
         }
+    })
+    // post reports api end
 
-        // User has not voted, proceed to update the vote count
-        const updateType = { $inc: { vote: 1 } }; // Increment the vote field by 1
-
-        // Update the product's vote count
-        await productsCollection.updateOne({ _id: new ObjectId(productId) }, updateType);
-
-        // Record the user's vote in the voteCollection
-        await voteCollection.insertOne({
-            productId: productId,
-            userEmail: userEmail,
-            type: type,
-        });
-
-        res.status(200).json({ message: 'Vote recorded successfully.' });
-    } catch (error) {
-        console.error('Error handling vote:', error);
-        res.status(500).json({ error: 'Internal Server Error' });
-    }
-});
+       // get reports api start 
+       app.get('/reports', async (req, res) => {
+        try {
+            const result = await reportsCollection.find().toArray();
+            res.send(result);
+            res.send(result);
+        } catch (error) {
+            console.log("error on app.post('/reports',", error)
+        }
+    })
+    // get reports api end
+        
+        
 
 
         // strip payment api start 
