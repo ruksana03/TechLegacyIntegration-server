@@ -38,6 +38,7 @@ async function run() {
         const voteCollection = client.db('TLIdb').collection('votes');
         const reviewsCollection = client.db('TLIdb').collection('reviews');
         const reportsCollection = client.db('TLIdb').collection('reports');
+        const paymentsCollection = client.db('TLIdb').collection('payments');
 
         // token verification api start 
         const verifyToken = async (req, res, next) => {
@@ -440,9 +441,9 @@ async function run() {
             }
         })
         // get Product api end
-        
+
         // strip payment api start 
-        // Server route
+        // create-checkout-session start 
         app.post('/create-checkout-session', async (req, res) => {
             try {
                 const { payAmount } = req.body;
@@ -452,18 +453,35 @@ async function run() {
                     return res.status(400).json({ error: 'Invalid payment amount' });
                 }
 
-                const { client_secret } = await stripe.paymentIntents.create({
+                const paymentIntent = await stripe.paymentIntents.create({
                     amount: amount,
                     currency: 'usd',
-                    payment_method: 'card',
+                    payment_method_types: ['card'],
                 });
+                res.send({
+                    clientSecret:paymentIntent.client_secret
+                })
 
-                res.status(200).json({ clientSecret: client_secret });
+                // res.status(200).json({ clientSecret: client_secret });
             } catch (error) {
                 console.error('Error creating checkout session:', error);
                 res.status(500).json({ error: 'Internal server error' });
             }
         });
+         // create-checkout-session end
+
+        //  post payment info api start
+        app.post('/payments', async (req, res) => {
+            try {
+                const payment = req.body;
+                const result = await paymentsCollection.insertOne(payment);
+                res.send(result);
+            } catch (error) {
+                console.log("error on app.post('/reports',", error)
+            }
+        })
+        //  post payment info api end
+
         // strip payment api end 
 
         // Save subscription info api start 
